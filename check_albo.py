@@ -52,9 +52,9 @@ def send_telegram_notification(publication):
     # Costruisce il messaggio in modo modulare
     message_parts = [
         f"🔔 *Nuova Pubblicazione all'Albo Pretorio*",
-        f"\n📄 *Oggetto:* {publication['oggetto']}",
-        f"\n🏷️ *Tipo Atto:* {publication['tipo']}",
-        f"🔢 *Numero:* {publication['numero_pubblicazione']} del {publication['data_inizio']}",
+        f"\n*Oggetto:* {publication['oggetto']}",
+        f"\n🏷*Tipo Atto:* {publication['tipo']}",
+        f"\n*Numero:* {publication['numero_pubblicazione']} del {publication['data_inizio']}",
         "\n---",
         "🔗 *Link Utili:*"
     ]
