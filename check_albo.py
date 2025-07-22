@@ -9,21 +9,17 @@ import json
 import re
 
 # --- CONFIGURAZIONE ---
-# Leggi i segreti dalle variabili d'ambiente di GitHub Actions
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 GIST_ID = os.getenv('GIST_ID')
 GIST_SECRET_TOKEN = os.getenv('GIST_SECRET_TOKEN')
 
-# Nome del file all'interno del Gist
 GIST_FILENAME = 'processed_ids.txt'
-
-# URL dell'Albo Pretorio
 ALBO_URL = "https://www.halleyweb.com/c065001/mc/mc_p_ricerca.php?noHeaderFooter=1&multiente=c065001"
 BASE_URL = "https://www.halleyweb.com/c065001/mc/"
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
 
-
+# --- FUNZIONI GIST (invariate) ---
 def get_gist_content():
     """Recupera il contenuto del file dal Gist."""
     headers = {'Authorization': f'token {GIST_SECRET_TOKEN}'}
@@ -39,18 +35,9 @@ def get_gist_content():
 
 def update_gist_content(new_content):
     """Aggiorna il contenuto del file nel Gist."""
-    headers = {
-        'Authorization': f'token {GIST_SECRET_TOKEN}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
+    headers = {'Authorization': f'token {GIST_SECRET_TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
     url = f'https://api.github.com/gists/{GIST_ID}'
-    payload = {
-        'files': {
-            GIST_FILENAME: {
-                'content': new_content
-            }
-        }
-    }
+    payload = {'files': {GIST_FILENAME: {'content': new_content}}}
     try:
         response = requests.patch(url, headers=headers, data=json.dumps(payload))
         response.raise_for_status()
@@ -58,20 +45,39 @@ def update_gist_content(new_content):
     except Exception as e:
         print(f"❌ Errore nell'aggiornare il Gist: {e}")
 
+# --- NUOVA FUNZIONE DI NOTIFICA ---
 def send_telegram_notification(publication):
-    """Invia una notifica tramite il bot di Telegram, gestendo link opzionali."""
+    """Invia una notifica Telegram con un formato moderno e gestione allegati."""
+    
+    # Costruisce il messaggio in modo modulare
     message_parts = [
-        f"🔔 *Nuova Pubblicazione all'Albo Pretorio di Acerno*",
-        f"\n*Oggetto:* {publication['oggetto']}",
-        f"\n*Tipo Atto:* {publication['tipo']}",
-        f"*Numero:* {publication['numero_pubblicazione']} del {publication['data_inizio']}"
+        f"🔔 *Nuova Pubblicazione all'Albo Pretorio*",
+        f"\n📄 *Oggetto:* {publication['oggetto']}",
+        f"\n🏷️ *Tipo Atto:* {publication['tipo']}",
+        f"🔢 *Numero:* {publication['numero_pubblicazione']} del {publication['data_inizio']}",
+        "\n---",
+        "🔗 *Link Utili:*"
     ]
     
+    # Aggiunge il link al documento principale SOLO se esiste
     if publication['url_documento']:
-        message_parts.append(f"\n[Scarica Documento Principale]({publication['url_documento']})")
+        message_parts.append(f"▸ [Scarica Documento Principale]({publication['url_documento']})")
+    
+    # Gestisce la lista degli allegati
+    attachments = publication.get('allegati', [])
+    if attachments:
+        message_parts.append(f"\n📎 *Allegati ({len(attachments)}):*")
         
-    # Link alla pagina di dettaglio per vedere gli allegati
-    message_parts.append(f"\n[Vedi Dettagli e Allegati]({publication['url_dettaglio']})")
+        MAX_ATTACHMENTS_TO_LIST = 3 # Mostra max 3 link diretti
+        for i, att in enumerate(attachments[:MAX_ATTACHMENTS_TO_LIST]):
+            message_parts.append(f"{i+1}. [{att['name']}]({att['url']})")
+        
+        if len(attachments) > MAX_ATTACHMENTS_TO_LIST:
+            remaining = len(attachments) - MAX_ATTACHMENTS_TO_LIST
+            message_parts.append(f"▸ _e altri {remaining}. [Visualizzali tutti qui]({publication['url_dettaglio']})_")
+    else:
+        # Se non ci sono allegati, mettiamo comunque un link generico ai dettagli
+        message_parts.append(f"▸ [Vedi Dettagli sulla Pagina]({publication['url_dettaglio']})")
 
     final_message = "\n".join(message_parts)
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -87,9 +93,9 @@ def send_telegram_notification(publication):
     except Exception as e:
         print(f"❌ Eccezione durante l'invio della notifica: {e}")
 
+# --- FUNZIONE PRINCIPALE (aggiornata per fetch allegati) ---
 def check_for_new_publications():
     """Funzione principale che controlla, confronta e notifica."""
-    # Verifica che tutte le credenziali siano presenti
     if not all([TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GIST_ID, GIST_SECRET_TOKEN]):
         print("❌ ERRORE: Una o più credenziali (Secrets) non sono state impostate.")
         return
@@ -108,7 +114,6 @@ def check_for_new_publications():
         return
 
     rows = [r for r in soup.select('#table-albo tbody tr') if len(r.find_all('td')) > 1]
-    
     new_publications_to_notify = []
     
     for row in rows:
@@ -131,8 +136,28 @@ def check_for_new_publications():
             'oggetto': oggetto_link.get_text(strip=True) if oggetto_link else 'N/D',
             'url_dettaglio': urljoin(BASE_URL, oggetto_link['href']) if oggetto_link else '',
             'data_inizio': lines_c5[1] if len(lines_c5) > 1 else '',
-            'url_documento': urljoin(BASE_URL, re.search(r"window\.open\('([^']*)'\)", doc_link_tag['onclick']).group(1)) if doc_link_tag else ""
+            'url_documento': urljoin(BASE_URL, re.search(r"window\.open\('([^']*)'\)", doc_link_tag['onclick']).group(1)) if doc_link_tag else "",
+            'allegati': [] # Lista per gli allegati
         }
+
+        # **NUOVA LOGICA: Visita la pagina di dettaglio per cercare allegati**
+        if publication_details['url_dettaglio']:
+            try:
+                print(f"  -> Visito la pagina di dettaglio per l'atto n. {act_id}...")
+                detail_res = requests.get(publication_details['url_dettaglio'], headers=HEADERS)
+                if detail_res.ok:
+                    detail_soup = BeautifulSoup(detail_res.text, 'lxml')
+                    # Cerca i link degli allegati nella sezione specifica
+                    allegati_section = detail_soup.select('.cms-table-allegati a[href*="mc_attachment.php"]')
+                    for link in allegati_section:
+                        publication_details['allegati'].append({
+                            'name': link.get_text(strip=True),
+                            'url': urljoin(BASE_URL, link['href'])
+                        })
+                time.sleep(0.5) # Piccola pausa per non sovraccaricare il server
+            except Exception as e:
+                print(f"  -> Errore nel recuperare gli allegati per l'atto {act_id}: {e}")
+
         new_publications_to_notify.append(publication_details)
 
     if not new_publications_to_notify:
@@ -142,7 +167,6 @@ def check_for_new_publications():
             send_telegram_notification(publication)
             time.sleep(2)
         
-        # Aggiorna la lista degli ID nel Gist
         new_ids_found = [p['id'] for p in new_publications_to_notify]
         final_content = gist_content + "\n" + "\n".join(new_ids_found)
         update_gist_content(final_content.strip())
