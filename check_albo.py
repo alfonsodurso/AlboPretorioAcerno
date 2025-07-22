@@ -61,7 +61,7 @@ def send_telegram_notification(publication):
         f"🔔 *Nuova Pubblicazione*",
         f"\n*Oggetto:* {publication['oggetto']}",
         f"\n*Tipo Atto:* {publication['tipo']}",
-        f"\n*Numero:* {publication['numero_pubblicazione']} del {publication['data_inizio']}"
+        f"*Numero:* {publication['numero_pubblicazione']} del {publication['data_inizio']}"
     ]
     if publication['url_documento']:
         message_parts.append(f"\n[Scarica Documento Principale]({publication['url_documento']})")
