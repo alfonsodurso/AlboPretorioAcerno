@@ -6,7 +6,7 @@ on:
   
   # Esegue lo script automaticamente ogni 3 ore
   schedule:
-    - cron: '0 */1 * * *'
+    - cron: '0 * * * *'
 
 jobs:
   build:
