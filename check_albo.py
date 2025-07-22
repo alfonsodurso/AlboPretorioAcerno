@@ -58,10 +58,10 @@ def update_gist_content(new_content):
 def send_telegram_notification(publication):
     """Invia una notifica tramite il bot di Telegram, gestendo link opzionali."""
     message_parts = [
-        f"🔔 *Nuova Pubblicazione all'Albo Pretorio di Acerno*",
+        f"🔔 *Nuova Pubblicazione*",
         f"\n*Oggetto:* {publication['oggetto']}",
-        f"*Tipo Atto:* {publication['tipo']}",
-        f"*Numero:* {publication['numero_pubblicazione']} del {publication['data_inizio']}"
+        f"\n*Tipo Atto:* {publication['tipo']}",
+        f"\n*Numero:* {publication['numero_pubblicazione']} del {publication['data_inizio']}"
     ]
     if publication['url_documento']:
         message_parts.append(f"\n[Scarica Documento Principale]({publication['url_documento']})")
