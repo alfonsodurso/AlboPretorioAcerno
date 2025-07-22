@@ -6,6 +6,7 @@ import time
 from urllib.parse import urljoin
 import os
 import json
+import re
 
 # --- CONFIGURAZIONE ---
 # Leggi i segreti dalle variabili d'ambiente di GitHub Actions
