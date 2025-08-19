@@ -1,4 +1,4 @@
-rname: Controlla Albo Pretorio Acerno (con Gist)
+name: Controlla Albo Pretorio Acerno (con Gist)
 
 on:
   # Permette di avviare il workflow manualmente dalla tab Actions
