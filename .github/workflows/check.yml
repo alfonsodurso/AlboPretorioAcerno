@@ -1,10 +1,10 @@
-name: Controlla Albo Pretorio Acerno (con Gist)
+rname: Controlla Albo Pretorio Acerno (con Gist)
 
 on:
   # Permette di avviare il workflow manualmente dalla tab Actions
   workflow_dispatch:
   
-  # Esegue lo script automaticamente ogni 3 ore
+  # Esegue lo script automaticamente ogni ora
   schedule:
     - cron: '0 * * * *'
 
