@@ -76,7 +76,7 @@ def send_telegram_notification(publication):
         f"<b>Numero:</b> {publication['numero_pubblicazione']}\n"
         f"<b>Data:</b> {publication['data_inizio']}\n"
         f"<b>Oggetto:</b> {publication['oggetto']}\n\n"
-        f"<a href=\"{publication['url_documento']}\">Documento principale</a>\n"
+        f"<a href=\"{publication['url_documento']}\">Documento principale</a>\n\n"
         f"<a href=\"{publication['url_dettaglio']}\">Vedi Dettagli e Allegati</a>"
     )
 
