@@ -16,7 +16,7 @@ GIST_ID = os.getenv('GIST_ID')
 GIST_SECRET_TOKEN = os.getenv('GIST_SECRET_TOKEN')
 
 # Nome del file all'interno del Gist
-GIST_FILENAME = 'processed_ids.txt'
+GIST_FILENAME = processed_data_acerno.json'
 
 # URL dell'Albo Pretorio
 BASE_URL = "https://www.halleyweb.com/c065001/mc/"
@@ -24,52 +24,48 @@ START_URL = urljoin(BASE_URL, "mc_p_ricerca.php?noHeaderFooter=1&multiente=c0650
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
 
 
-def get_gist_content():
-    """Recupera il contenuto del file dal Gist."""
-    headers = {'Authorization': f'token {GIST_SECRET_TOKEN}'}
+# --- FUNZIONI GIST ---
+def get_gist_data():
+    headers = {'Authorization': f'token {GIST_SECRET_TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
     url = f'https://api.github.com/gists/{GIST_ID}'
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         gist_data = response.json()
-        # Gestisce il caso in cui il file non esista ancora nel Gist
         if GIST_FILENAME in gist_data['files']:
-            return gist_data['files'][GIST_FILENAME]['content']
-        return ""
+            content = gist_data['files'][GIST_FILENAME]['content']
+            if content.strip():
+                return json.loads(content)
+        return {}
     except Exception as e:
-        print(f"❌ Errore nel recuperare il Gist: {e}. Parto con una lista vuota.")
-        return ""
+        print(f"❌ Errore recupero Gist: {e}")
+        return {}
 
-def update_gist_content(new_content):
-    """Aggiorna il contenuto del file nel Gist."""
-    headers = {
-        'Authorization': f'token {GIST_SECRET_TOKEN}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
+def update_gist_data(data):
+    headers = {'Authorization': f'token {GIST_SECRET_TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
     url = f'https://api.github.com/gists/{GIST_ID}'
-    payload = {'files': {GIST_FILENAME: {'content': new_content}}}
+    payload = {'files': {GIST_FILENAME: {'content': json.dumps(data, indent=4)}}}
     try:
         response = requests.patch(url, headers=headers, data=json.dumps(payload))
         response.raise_for_status()
         print("✅ Gist aggiornato con successo.")
     except Exception as e:
-        print(f"❌ Errore nell'aggiornare il Gist: {e}")
+        print(f"❌ Errore aggiornamento Gist: {e}")
 
 def send_telegram_notification(publication):
-    """Invia una notifica tramite il bot di Telegram, gestendo link opzionali."""
-    message_parts = [
-        f"🔔 *Nuova Pubblicazione*",
-        f"\n*Oggetto:* {publication['oggetto']}",
-        f"\n*Tipo Atto:* {publication['tipo']}",
-        f"*Numero:* {publication['numero_pubblicazione']} del {publication['data_inizio']}"
-    ]
-    if publication['url_documento']:
-        message_parts.append(f"\n[Scarica Documento Principale]({publication['url_documento']})")
-    message_parts.append(f"\n[Vedi Dettagli e Allegati]({publication['url_dettaglio']})")
+    """Invia una notifica tramite il bot di Telegram, gestendo link opzionali.""
+
+    message = (
+        f"🔔 *Nuova Pubblicazione*\n\n"
+        f"📰 *Tipo Atto:* {publication['tipo']}\n"
+        f"🔢 *Numero:* {publication['numero_pubblicazione']}\n"
+        f"📅 *Data:* {publication['data_inizio']}\n"
+        f"📝 *Oggetto:* {publication['oggetto']}\n"
+        f"🔗 [Vedi Dettagli]({publication['url_dettaglio']})"
+    )
     
-    final_message = "\n".join(message_parts)
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': final_message, 'parse_mode': 'Markdown'}
+    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}
     try:
         response = requests.post(url, data=payload)
         response.raise_for_status()
@@ -81,15 +77,13 @@ def send_telegram_notification(publication):
         print(f"❌ Eccezione durante l'invio della notifica: {e}")
 
 def check_for_new_publications():
-    """Funzione principale che controlla, confronta e notifica, gestendo la paginazione."""
     if not all([TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GIST_ID, GIST_SECRET_TOKEN]):
-        print("❌ ERRORE: Una o più credenziali (Secrets) non sono state impostate.")
+        print("❌ Credenziali mancanti.")
         return
 
-    print("--- Avvio controllo nuove pubblicazioni ---")
-    gist_content = get_gist_content()
-    processed_ids = set(gist_content.splitlines())
-    print(f"Caricati {len(processed_ids)} ID già processati dal Gist.")
+    processed_data = get_gist_data()
+    processed_ids = set(processed_data.keys())
+    print(f"Caricati {len(processed_ids)} atti già processati.")
     
     new_publications_to_notify = []
     current_page_url = START_URL
