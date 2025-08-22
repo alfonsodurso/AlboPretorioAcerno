@@ -53,7 +53,7 @@ def update_gist_data(data):
         print(f"❌ Errore aggiornamento Gist: {e}")
 
 def send_telegram_notification(publication):
-    """Invia una notifica tramite il bot di Telegram, gestendo link opzionali.""
+    """Invia una notifica tramite il bot di Telegram, gestendo link opzionali."""
 
     message = (
         f"🔔 *Nuova Pubblicazione*\n\n"
