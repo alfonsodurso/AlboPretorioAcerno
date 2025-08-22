@@ -57,15 +57,16 @@ def send_telegram_notification(publication):
 
     message = (
         f"🔔 *Nuova Pubblicazione*\n\n"
-        f"📰 *Tipo Atto:* {publication['tipo']}\n"
-        f"🔢 *Numero:* {publication['numero_pubblicazione']}\n"
-        f"📅 *Data:* {publication['data_inizio']}\n"
-        f"📝 *Oggetto:* {publication['oggetto']}\n"
-        f"🔗 [Vedi Dettagli]({publication['url_dettaglio']})"
+        f"*Tipo Atto:* {publication['tipo']}\n"
+        f"*Numero:* {publication['numero_pubblicazione']}\n"
+        f"*Data:* {publication['data_inizio']}\n"
+        f"*Oggetto:* {publication['oggetto']}\n\n"
+        f"*Documento principale:* {publication['url_documento']}\n\n"
+        f"[Vedi Dettagli e Allegati]({publication['url_dettaglio']})"
     )
     
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}
+    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'Markdown', 'disable_web_page_preview': True}
     try:
         response = requests.post(url, data=payload)
         response.raise_for_status()
