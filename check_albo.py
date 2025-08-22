@@ -16,7 +16,7 @@ GIST_ID = os.getenv('GIST_ID')
 GIST_SECRET_TOKEN = os.getenv('GIST_SECRET_TOKEN')
 
 # Nome del file all'interno del Gist
-GIST_FILENAME = processed_data_acerno.json'
+GIST_FILENAME = 'processed_data_acerno.json'
 
 # URL dell'Albo Pretorio
 BASE_URL = "https://www.halleyweb.com/c065001/mc/"
