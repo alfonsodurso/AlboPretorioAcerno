@@ -132,6 +132,11 @@ def check_for_new_publications():
             }
             new_publications_to_notify.append(publication_details)
 
+            processed_data[act_id] = {
+                        'numero': publication_details[numero_pubblicazione],
+                        'oggetto': publication_details[oggetto]
+                    }
+
         # Cerca il link alla pagina successiva
         next_page_link = soup.find('a', title="Pagina successiva")
         if next_page_link and next_page_link.has_attr('href'):
@@ -150,9 +155,7 @@ def check_for_new_publications():
             send_telegram_notification(publication)
             time.sleep(2)
         
-        new_ids_found = [p['id'] for p in new_publications_to_notify]
-        final_content = gist_content + "\n" + "\n".join(new_ids_found)
-        update_gist_content(final_content.strip())
+        update_gist_data(processed_data)
 
     print("--- Controllo terminato ---")
 
